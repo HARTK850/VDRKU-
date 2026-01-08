@@ -1,4 +1,5 @@
 name: Build Android APK
+
 on:
   push:
     branches:
@@ -8,51 +9,61 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      # שלב 1: התקנת Node.js
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # שלב 2: התקנת Java 11 (מתאים יותר לאנדרואיד ישן מאשר 17)
+      # Java 11 – חובה ל-Cordova + Android ישן
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      # שלב 3: התקנת Gradle 7.6 (התיקון לשגיאה שלך!)
-      # זה ימנע את השימוש ב-Gradle 8 החדש ששובר את הקוד
+      # ⭐ השלב שהיה חסר – Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 30
+          build-tools: 30.0.3
+          ndk: false
+
+      # Gradle 7.6 (לא 8!)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '7.6'
 
+      # Cordova
       - name: Install Cordova
-        run: npm install -g cordova
+        run: npm install -g cordova@11
 
-      - name: Create Cordova Project Structure
+      # יצירת פרויקט Cordova
+      - name: Create Cordova Project
         run: |
           cordova create app com.lottery.app "LotteryApp"
-          # מחיקת קבצי ברירת המחדל
           rm -rf app/www/*
-          # העתקת הקבצים שלך
           cp -r index.html js app/www/
-          # העתקת קובץ ההגדרות
           cp config.xml app/
 
-      # שימוש בגרסה 10.1.2 שעדיין תומכת בקיטקט (4.4)
+      # Android 10.1.2 = תומך Android 4.4
       - name: Add Android Platform
-        working-directory: ./app
+        working-directory: app
         run: cordova platform add android@10.1.2
 
+      # בניית APK (לא AAB!)
       - name: Build APK
-        working-directory: ./app
+        working-directory: app
         run: cordova build android --release -- --packageType=apk
 
+      # העלאת הקובץ
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
