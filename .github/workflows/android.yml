@@ -11,51 +11,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. הגדרת Node.js (גרסה יציבה שתומכת ב-Cordova)
+      # שלב 1: התקנת Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
-      # 2. הגדרת Java 11 (קריטי לאנדרואיד ישן)
+      # שלב 2: התקנת Java 11 (מתאים יותר לאנדרואיד ישן מאשר 17)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      # 3. התקנת הכלים החסרים שגרמו לשגיאה (Build Tools 30.0.3)
-      - name: Install Android Build Tools
-        run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "build-tools;30.0.3" "platforms;android-30"
+      # שלב 3: התקנת Gradle 7.6 (התיקון לשגיאה שלך!)
+      # זה ימנע את השימוש ב-Gradle 8 החדש ששובר את הקוד
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '7.6'
 
-      # 4. התקנת Cordova
       - name: Install Cordova
         run: npm install -g cordova
 
-      # 5. יצירת מבנה הפרויקט
       - name: Create Cordova Project Structure
         run: |
           cordova create app com.lottery.app "LotteryApp"
+          # מחיקת קבצי ברירת המחדל
           rm -rf app/www/*
+          # העתקת הקבצים שלך
           cp -r index.html js app/www/
+          # העתקת קובץ ההגדרות
           cp config.xml app/
 
-      # 6. הוספת פלטפורמת אנדרואיד והגדרת Gradle 
-      # גרסה 10.1.2 היא האחרונה שתומכת ב-4.4 בצורה טובה
+      # שימוש בגרסה 10.1.2 שעדיין תומכת בקיטקט (4.4)
       - name: Add Android Platform
         working-directory: ./app
-        run: |
-          cordova platform add android@10.1.2
+        run: cordova platform add android@10.1.2
 
-      # 7. בניית ה-APK
       - name: Build APK
         working-directory: ./app
         run: cordova build android --release -- --packageType=apk
 
-      # 8. העלאת הקובץ המוכן
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: lottery-app-final
+          name: lottery-app-apk
           path: app/platforms/android/app/build/outputs/apk/release/*.apk
