@@ -69,3 +69,4 @@ jobs:
         with:
           name: lottery-app-apk
           path: app/platforms/android/app/build/outputs/apk/release/*.apk
+
