@@ -1,4 +1,4 @@
-name: Build Android APK (Android 4.4 Offline)
+name: Build Android APK (Fixed Version)
 
 on:
   push:
@@ -14,19 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. שינוי ל-Java 17 - הפתרון לשגיאה שקיבלת!
-      # Gradle 9 חייב Java 17 כדי לרוץ, גם אם האפליקציה תומכת בגרסה ישנה
-      - name: Setup Java 17
+      # 1. שימוש ב-Java 11 - הגרסה היציבה ביותר לבניית פרויקטים ישנים
+      - name: Setup Java 11
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
       # 2. הגדרת Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       # 3. התקנת Cordova
       - name: Install Cordova
@@ -46,13 +45,19 @@ jobs:
         working-directory: app
         run: cordova platform add android@10.1.2
 
-      # 6. בניית ה-APK
-      # הוספנו דגל שמורה ל-Gradle להתעלם מבעיות תאימות של גרסאות Java
+      # 6. התיקון הקריטי: הורדת גרסת ה-Gradle ל-7.1.1
+      # פקודה זו משנה את הגדרות הפרויקט כך שלא ישתמש ב-Gradle 9 ששבר לך את הבנייה
+      - name: Downgrade Gradle Version
+        working-directory: app/platforms/android
+        run: |
+          sed -i 's/distributionUrl=https\\:\/\/services.gradle.org\/distributions\/gradle-.*-all.zip/distributionUrl=https\\:\/\/services.gradle.org\/distributions\/gradle-7.1.1-all.zip/' gradle/wrapper/gradle-wrapper.properties
+
+      # 7. בניית ה-APK
       - name: Build APK
         working-directory: app
         run: cordova build android --release -- --packageType=apk
 
-      # 7. העלאת הקובץ המוכן
+      # 8. העלאת הקובץ המוכן
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
