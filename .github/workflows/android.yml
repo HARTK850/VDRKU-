@@ -20,22 +20,29 @@ jobs:
         with:
           node-version: '18'
 
-      # Java 11 – חובה ל-Cordova + Android ישן
-      - name: Setup Java
+      # 🔹 Java 17 – רק בשביל Android SDK
+      - name: Setup Java 17 (for SDK tools)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 🔹 Android SDK – שימוש ב-packages (הדרך החדשה)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-30
+            build-tools;30.0.3
+
+      # 🔹 חזרה ל-Java 11 – חובה ל-Cordova + Android 4.4
+      - name: Setup Java 11 (for Cordova build)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      # ⭐ השלב שהיה חסר – Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 30
-          build-tools: 30.0.3
-          ndk: false
-
-      # Gradle 7.6 (לא 8!)
+      # Gradle 7.6
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -53,20 +60,19 @@ jobs:
           cp -r index.html js app/www/
           cp config.xml app/
 
-      # Android 10.1.2 = תומך Android 4.4
+      # Android 10.1.2 – תומך Android 4.4
       - name: Add Android Platform
         working-directory: app
         run: cordova platform add android@10.1.2
 
-      # בניית APK (לא AAB!)
+      # Build APK
       - name: Build APK
         working-directory: app
         run: cordova build android --release -- --packageType=apk
 
-      # העלאת הקובץ
+      # Upload
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: lottery-app-apk
           path: app/platforms/android/app/build/outputs/apk/release/*.apk
-
