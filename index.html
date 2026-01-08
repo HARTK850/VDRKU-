@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>הגרלת שמות</title>
+    
+    <script src="js/confetti.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            direction: rtl;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            overflow: hidden;
+        }
+        .container {
+            background: white;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            width: 95%;
+            max-width: 600px;
+            position: relative;
+            box-sizing: border-box;
+        }
+        #lotteryBox {
+            width: 100%;
+            height: 200px; /* הוקטן מעט למסכים קטנים */
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #e63946;
+            background: #fff;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .card {
+            position: absolute;
+            padding: 5px 10px;
+            background-color: #ff6f61;
+            color: white;
+            font-size: 14px;
+            border-radius: 10px;
+            /* הסרנו אנימציות כבדות מידי לאנדרואיד 4.4, השארנו בסיסיות */
+            transition: top 0.5s, left 0.5s; 
+        }
+        .winner-card {
+            font-size: 24px;
+            background-color: #ff6f61;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 20px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%); /* שימוש בסיסי ללא scale בהתחלה */
+            opacity: 0;
+            transition: opacity 1s ease;
+            z-index: 100;
+        }
+        .winner-card.enlarged {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+        button {
+            background-color: #1d3557;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 10px;
+            margin: 5px;
+            width: 90%;
+        }
+        textarea {
+            width: 90%;
+            height: 60px;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .countdown {
+            font-size: 40px;
+            font-weight: bold;
+            color: #e63946;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎉 הגרלת שמות 🎉</h2>
+        <textarea id="names" placeholder="הכנס שמות, אחד בכל שורה"></textarea>
+        <button onclick="startLottery()">💥 הגרל זוכה! 💥</button>
+        <div id="lotteryBox">
+            <div>מוכן להגרלה...</div>
+        </div>
+        <button onclick="startLottery()">🔄 זוכה נוסף</button>
+    </div>
+
+    <script>
+        // שימוש ב-var במקום let/const לאנדרואיד 4.4
+        var countdownInterval;
+
+        function startLottery() {
+            var namesInput = document.getElementById("names").value;
+            // תמיכה ב-trim לדפדפנים ישנים
+            if (!String.prototype.trim) {
+                String.prototype.trim = function () {
+                    return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+                };
+            }
+            
+            var names = namesInput.trim().split("\n");
+            // סינון שמות ריקים
+            var cleanNames = [];
+            for (var i = 0; i < names.length; i++) {
+                if (names[i].trim() !== "") {
+                    cleanNames.push(names[i]);
+                }
+            }
+
+            if (cleanNames.length === 0) {
+                document.getElementById("lotteryBox").textContent = "אין שמות להגרלה";
+                return;
+            }
+            
+            var box = document.getElementById("lotteryBox");
+            box.innerHTML = ""; 
+
+            // ספירה לאחור
+            var countdown = document.createElement("div");
+            countdown.className = "countdown";
+            countdown.textContent = "3"; // קיצרנו ל-3 שניות
+            box.appendChild(countdown);
+
+            var countdownTime = 3;
+            countdownInterval = setInterval(function() {
+                countdownTime--;
+                countdown.textContent = countdownTime;
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    startCards(cleanNames, box, countdown);
+                }
+            }, 1000);
+        }
+
+        function startCards(names, box, countdown) {
+            if(countdown.parentNode) {
+                countdown.parentNode.removeChild(countdown);
+            }
+
+            // יצירת קלפים
+            for (var i = 0; i < names.length; i++) {
+                (function(name) {
+                    var card = document.createElement("div");
+                    card.className = "card";
+                    card.textContent = name;
+                    card.style.left = Math.floor(Math.random() * 80) + "%";
+                    card.style.top = Math.floor(Math.random() * 80) + "%";
+                    box.appendChild(card);
+                })(names[i]);
+            }
+
+            // בחירת זוכה
+            setTimeout(function() {
+                var winnerIndex = Math.floor(Math.random() * names.length);
+                var winner = names[winnerIndex];
+                
+                // ניקוי הקופסה
+                box.innerHTML = "";
+                
+                var winnerCard = document.createElement("div");
+                winnerCard.textContent = "🎊 " + winner + " 🎊";
+                winnerCard.className = "winner-card";
+                box.appendChild(winnerCard);
+
+                setTimeout(function() {
+                    winnerCard.className += " enlarged";
+                    
+                    // הפעלת קונפטי - בדיקה שנטען
+                    if (typeof confetti === 'function') {
+                        confetti({
+                            particleCount: 150,
+                            spread: 70,
+                            origin: { y: 0.6 }
+                        });
+                    }
+                }, 500);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
