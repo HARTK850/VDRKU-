@@ -11,16 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # שלב 1: התקנת Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # עדכנו לגרסה 20 כדי לפתור את השגיאה
+          node-version: '18'
 
+      # שלב 2: התקנת Java 11 (מתאים יותר לאנדרואיד ישן מאשר 17)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # גרסה מומלצת לכלי הבנייה המודרניים
+          java-version: '11'
+
+      # שלב 3: התקנת Gradle 7.6 (התיקון לשגיאה שלך!)
+      # זה ימנע את השימוש ב-Gradle 8 החדש ששובר את הקוד
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '7.6'
 
       - name: Install Cordova
         run: npm install -g cordova
@@ -28,15 +37,17 @@ jobs:
       - name: Create Cordova Project Structure
         run: |
           cordova create app com.lottery.app "LotteryApp"
-          # מחיקת תיקיית ה-www ברירת המחדל והעתקת הקבצים שלך
+          # מחיקת קבצי ברירת המחדל
           rm -rf app/www/*
+          # העתקת הקבצים שלך
           cp -r index.html js app/www/
-          # העתקת קובץ ההגדרות למיקום הנכון
+          # העתקת קובץ ההגדרות
           cp config.xml app/
 
+      # שימוש בגרסה 10.1.2 שעדיין תומכת בקיטקט (4.4)
       - name: Add Android Platform
         working-directory: ./app
-        run: cordova platform add android@10.1.2 # גרסה יציבה שתומכת ב-API ישנים
+        run: cordova platform add android@10.1.2
 
       - name: Build APK
         working-directory: ./app
