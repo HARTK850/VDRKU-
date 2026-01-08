@@ -1,0 +1,43 @@
+name: Build Android APK
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova Project Structure
+        run: |
+          cordova create app com.lottery.app "LotteryApp"
+          # Move our www files into the cordova www folder
+          rm -rf app/www/*
+          cp -r index.html js config.xml app/www/
+          # Fix path if config.xml is in root
+          cp config.xml app/
+
+      - name: Add Android Platform
+        working-directory: ./app
+        run: cordova platform add android
+
+      - name: Build APK
+        working-directory: ./app
+        run: cordova build android --release -- --packageType=apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lottery-app
+          path: app/platforms/android/app/build/outputs/apk/release/*.apk
