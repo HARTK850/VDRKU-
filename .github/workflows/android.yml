@@ -1,4 +1,4 @@
-name: Build Android APK (Final Fix)
+name: Build Android APK (Final Rescue)
 
 on:
   push:
@@ -8,28 +8,29 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # שימוש בגרסת אובונטו ישנה יותר כדי למנוע גרסאות Gradle חדשות מדי
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. שימוש ב-Java 11 - הכי יציב לקורדובה 10
-      - name: Setup Java 11
+      # 1. הגדרת Java 8 - הכי בטוח לאנדרואיד 4.4 וקורדובה ישן
+      - name: Setup Java 8
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '8'
 
       # 2. הגדרת Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '16'
 
       # 3. התקנת Cordova
       - name: Install Cordova
-        run: npm install -g cordova@11
+        run: npm install -g cordova@10.0.0
 
       # 4. יצירת הפרויקט והעתקת הקבצים
       - name: Create Cordova project
@@ -40,20 +41,18 @@ jobs:
           [ -d "js" ] && cp -r js app/www/ || echo "No js folder found"
           cp config.xml app/
 
-      # 5. הוספת פלטפורמת אנדרואיד
+      # 5. הוספת פלטפורמת אנדרואיד בגרסה שתומכת ב-4.4 באופן מלא
       - name: Add Android platform
         working-directory: app
-        run: cordova platform add android@10.1.2
+        run: cordova platform add android@9.1.0
 
-      # 6. בניית ה-APK עם הגדרת Gradle ידנית
-      # כאן אנחנו מכריחים את המערכת להשתמש בגרסה 7.1.1 בלי לחפש קבצים בנתיבים משתנים
+      # 6. בניית ה-APK
+      # השילוב של אובונטו 20.04 ו-Java 8 ימנע מ-Gradle 9 לרוץ
       - name: Build APK
         working-directory: app
-        env:
-          CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: https://services.gradle.org/distributions/gradle-7.1.1-all.zip
         run: cordova build android --release -- --packageType=apk
 
-      # 7. העלאת הקובץ המוכן
+      # 7. העלאת הקובץ
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
