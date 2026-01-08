@@ -9,12 +9,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: '20' # עדכנו לגרסה 20 כדי לפתור את השגיאה
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # גרסה מומלצת לכלי הבנייה המודרניים
 
       - name: Install Cordova
         run: npm install -g cordova
@@ -22,15 +28,15 @@ jobs:
       - name: Create Cordova Project Structure
         run: |
           cordova create app com.lottery.app "LotteryApp"
-          # Move our www files into the cordova www folder
+          # מחיקת תיקיית ה-www ברירת המחדל והעתקת הקבצים שלך
           rm -rf app/www/*
-          cp -r index.html js config.xml app/www/
-          # Fix path if config.xml is in root
+          cp -r index.html js app/www/
+          # העתקת קובץ ההגדרות למיקום הנכון
           cp config.xml app/
 
       - name: Add Android Platform
         working-directory: ./app
-        run: cordova platform add android
+        run: cordova platform add android@10.1.2 # גרסה יציבה שתומכת ב-API ישנים
 
       - name: Build APK
         working-directory: ./app
@@ -39,5 +45,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: lottery-app
+          name: lottery-app-apk
           path: app/platforms/android/app/build/outputs/apk/release/*.apk
